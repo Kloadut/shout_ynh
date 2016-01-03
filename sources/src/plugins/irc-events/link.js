@@ -3,7 +3,7 @@ var cheerio = require("cheerio");
 var Msg = require("../../models/msg");
 var request = require("request");
 var Helper = require("../../helper");
-var es = require('event-stream');
+var es = require("event-stream");
 
 process.setMaxListeners(0);
 
@@ -18,9 +18,6 @@ module.exports = function(irc, network) {
 		var links = [];
 		var split = data.message.split(" ");
 		_.each(split, function(w) {
-			if (w.match(/^(http|https):\/\/localhost/g)) {
-				return;
-			}
 			var match = w.indexOf("http://") === 0 || w.indexOf("https://") === 0;
 			if (match) {
 				links.push(w);
@@ -31,7 +28,7 @@ module.exports = function(irc, network) {
 			return;
 		}
 
-		var self = data.to.toLowerCase() == irc.me.toLowerCase();
+		var self = data.to.toLowerCase() === irc.me.toLowerCase();
 		var chan = _.findWhere(network.channels, {name: self ? data.from : data.to});
 		if (typeof chan === "undefined") {
 			return;
@@ -55,6 +52,7 @@ module.exports = function(irc, network) {
 };
 
 function parse(msg, url, res, client) {
+	var config = Helper.getConfig();
 	var toggle = msg.toggle = {
 		id: msg.id,
 		type: "",
@@ -64,18 +62,21 @@ function parse(msg, url, res, client) {
 		link: url
 	};
 
+	if (!config.prefetchMaxImageSize) {
+		config.prefetchMaxImageSize = 512;
+	}
 	switch (res.type) {
 	case "text/html":
 		var $ = cheerio.load(res.text);
 		toggle.type = "link";
 		toggle.head = $("title").text();
 		toggle.body =
-			   $('meta[name=description]').attr('content')
-			|| $('meta[property="og:description"]').attr('content')
+			$("meta[name=description]").attr("content")
+			|| $("meta[property=\"og:description\"]").attr("content")
 			|| "No description found.";
 		toggle.thumb =
-			   $('meta[property="og:image"]').attr('content')
-			|| $('meta[name="twitter:image:src"]').attr('content')
+			$("meta[property=\"og:image\"]").attr("content")
+			|| $("meta[name=\"twitter:image:src\"]").attr("content")
 			|| "";
 		break;
 
@@ -83,7 +84,12 @@ function parse(msg, url, res, client) {
 	case "image/gif":
 	case "image/jpg":
 	case "image/jpeg":
-		toggle.type = "image";
+		if (res.size < (config.prefetchMaxImageSize * 1024)) {
+			toggle.type = "image";
+		}
+		else {
+			return;
+		}
 		break;
 
 	default:
@@ -96,18 +102,18 @@ function parse(msg, url, res, client) {
 function fetch(url, cb) {
 	try {
 		var req = request.get(url);
-	} catch(e) {
+	} catch (e) {
 		return;
 	}
 	var length = 0;
 	var limit = 1024 * 10;
 	req
-		.on('response', function(res) {
-			if (!(/(text\/html|application\/json)/.test(res.headers['content-type']))) {
-			  res.req.abort();
+		.on("response", function(res) {
+			if (!(/(text\/html|application\/json)/.test(res.headers["content-type"]))) {
+				res.req.abort();
 			}
 		})
-		.on('error', function() {})
+		.on("error", function() {})
 		.pipe(es.map(function(data, next) {
 			length += data.length;
 			if (length > limit) {
@@ -119,20 +125,22 @@ function fetch(url, cb) {
 			if (err) return;
 			var body;
 			var type;
+			var size = req.response.headers["content-length"];
 			try {
 				body = JSON.parse(data);
-			} catch(e) {
+			} catch (e) {
 				body = {};
 			}
 			try {
-				type = req.response.headers['content-type'].split(/ *; */).shift();
-			} catch(e) {
+				type = req.response.headers["content-type"].split(/ *; */).shift();
+			} catch (e) {
 				type = {};
 			}
 			data = {
 				text: data,
 				body: body,
-				type: type
+				type: type,
+				size: size
 			};
 			cb(data);
 		}));

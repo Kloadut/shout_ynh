@@ -34,12 +34,12 @@ To run the app from source, just clone the code and run this in your terminal:
 
 ```
 npm install
-grunt
-./index.js --port 8080
+npm run build
+npm start
 ```
-
-And if you don't have [grunt](http://gruntjs.com/getting-started) installed already, just run `npm install -g grunt-cli`.
 
 ## License
 
-Available under [the MIT license](http://mths.be/mit).
+Available under the [MIT License](http://mths.be/mit).
+
+Some fonts licensed under [SIL OFL](http://scripts.sil.org/OFL) and the [Apache License](http://www.apache.org/licenses/).

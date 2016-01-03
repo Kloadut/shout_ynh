@@ -8,7 +8,7 @@ module.exports = {
 	// @type     boolean
 	// @default  false
 	//
-	public: false,
+	public: true,
 
 	//
 	// Allow connections from this host.
@@ -62,19 +62,18 @@ module.exports = {
 	// @type     boolean
 	// @default  true
 	//
-	prefetch: true,
+	prefetch: false,
 
-        //
-        // Serving path
-        //
-        // The path at which shout is available.
-        // For example if you set this to /chat,
-        // shout will be available at http://0.0.0.0:9000/chat
-        //
-        // @type     string
-        // @default  "/"
-        //
-        rootpath: "/",
+	//
+	// Prefetch URLs Image Preview size limit
+	//
+	// If prefetch is enabled, Shout will only display content under the maximum size.
+	// Default value is 512 (in kB)
+	//
+	// @type     int
+	// @default  512
+	//
+	prefetchMaxImageSize: 512,
 
 	//
 	// Display network
