@@ -5,6 +5,7 @@
         "en": "Web IRC client",
         "fr": "Client Web IRC"
     },
+    "license": "MIT",
     "maintainer": {
         "name": "kload",
         "email": "kload@kload.fr"
