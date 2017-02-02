@@ -16,8 +16,8 @@ module.exports = function(options) {
 	config = _.extend(config, options);
 
 	var app = express()
-	        .use(config.rootpath, index)
-	        .use(config.rootpath, express.static("client"));
+		.use(index)
+		.use(express.static("client"));
 
 	app.enable("trust proxy");
 
@@ -26,7 +26,7 @@ module.exports = function(options) {
 	var protocol = https.enable ? "https" : "http";
 	var port = config.port;
 	var host = config.host;
-	var transports = config.transports || ['websocket', 'polling'];
+	var transports = config.transports || ["websocket", "polling"];
 
 	if (!https.enable){
 		server = require("http");
@@ -44,23 +44,12 @@ module.exports = function(options) {
 	}
 
 	sockets = io(server, {
-		transports: transports,
-                path: config.rootpath + 'socket.io'
+		transports: transports
 	});
 
 	sockets.on("connect", function(socket) {
-                var authHeader = socket.client.request.headers.authorization;
-                config.public = (authHeader == undefined);
 		if (config.public) {
-		        auth.call(socket);
-                } else if (authHeader) {
-                        var buf = new Buffer(authHeader.split(' ')[1], 'base64');
-                        var plain_auth = buf.toString();
-                        var creds = plain_auth.split(':');
-		        manager.addUser(creds[0], bcrypt.hashSync(creds[1], null));
-                        manager.loadUser(creds[0]);
-
-                        auth.call(socket);
+			auth.call(socket);
 		} else {
 			init(socket);
 		}
@@ -74,15 +63,15 @@ module.exports = function(options) {
 	console.log("");
 
 	if (!config.public) {
-		//manager.loadUsers();
-		//if (config.autoload) {
-		//	manager.autoload();
-		//}
+		manager.loadUsers();
+		if (config.autoload) {
+			manager.autoload();
+		}
 	}
 };
 
 function index(req, res, next) {
-	if (req.url.split("?")[0] != "/") return next();
+	if (req.url.split("?")[0] !== "/") return next();
 	return fs.readFile("client/index.html", "utf-8", function(err, file) {
 		var data = _.merge(
 			require("../package.json"),
@@ -153,28 +142,16 @@ function auth(data) {
 		init(socket, client);
 	} else {
 		var success = false;
-                var authHeader = socket.client.request.headers.authorization;
-	        if (authHeader) {
-                        var buf = new Buffer(authHeader.split(' ')[1], 'base64');
-                        var plain_auth = buf.toString();
-                        var creds = plain_auth.split(':');
-                        data = {
-                          remember: true,
-                          user: creds[0]
-                        };
-                }
 		_.each(manager.clients, function(client) {
 			if (data.token) {
-				if (data.token == client.token) {
+				if (data.token === client.token) {
 					success = true;
 				}
-			} else if (client.config.user == data.user) {
-                                if (socket.client.request.headers.authorization) {
-                                        success = true;
-                                } else if (bcrypt.compareSync(data.password || "", client.config.password)) {
-			                success = true;
-			        }
-                        }
+			} else if (client.config.user === data.user) {
+				if (bcrypt.compareSync(data.password || "", client.config.password)) {
+					success = true;
+				}
+			}
 			if (success) {
 				var token;
 				if (data.remember || data.token) {
